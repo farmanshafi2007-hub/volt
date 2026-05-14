@@ -1,0 +1,13 @@
+{
+  "name": "Volt Message",
+  "description": "A high-security, real-time messaging application with a sleek, pulse-inspired interface, powered by Firebase and Google AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "Real-time Chat",
+    "Secure Authentication",
+    "AI-powered Smart Replies"
+  ]
+}
