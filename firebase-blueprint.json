@@ -42,9 +42,10 @@
         "senderId": { "type": "string" },
         "text": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" },
-        "type": { "type": "string", "enum": ["text", "image"] }
+        "type": { "type": "string", "enum": ["text", "image"] },
+        "participants": { "type": "array", "items": { "type": "string" } }
       },
-      "required": ["senderId", "text", "timestamp", "type"]
+      "required": ["senderId", "text", "timestamp", "type", "participants"]
     }
   },
   "firestore": {
@@ -65,7 +66,8 @@
         "type": "object",
         "properties": {
           "isTyping": { "type": "boolean" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "participants": { "type": "array", "items": { "type": "string" } }
         }
       },
       "description": "Real-time typing status of a user in a conversation."

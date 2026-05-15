@@ -202,7 +202,8 @@ export default function App() {
       if (user && selectedConvo) {
         setDoc(doc(db, `conversations/${selectedConvo.id}/typing`, user.uid), {
           isTyping: false,
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
+          participants: selectedConvo.participants
         }, { merge: true }).catch(console.error);
       }
       return;
@@ -211,7 +212,8 @@ export default function App() {
     // Set typing to true
     setDoc(doc(db, `conversations/${selectedConvo.id}/typing`, user.uid), {
       isTyping: true,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
+      participants: selectedConvo.participants
     }, { merge: true }).catch(console.error);
 
     // Clear existing timeout
@@ -221,7 +223,8 @@ export default function App() {
     typingTimeoutRef.current = setTimeout(() => {
       setDoc(doc(db, `conversations/${selectedConvo.id}/typing`, user.uid), {
         isTyping: false,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        participants: selectedConvo.participants
       }, { merge: true }).catch(console.error);
     }, 3000);
 
@@ -230,15 +233,22 @@ export default function App() {
     };
   }, [inputText, selectedConvo, user]);
 
+  // AI Setup
+  const aiRef = useRef<GoogleGenAI | null>(null);
+  useEffect(() => {
+    if (process.env.GEMINI_API_KEY) {
+      aiRef.current = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    }
+  }, []);
+
   // AI Suggestions
   const generateAiSuggestions = async () => {
-    if (!messages.length || isAiLoading) return;
+    if (!messages.length || isAiLoading || !aiRef.current) return;
     setIsAiLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const lastMessages = messages.slice(-5).map(m => `${m.senderId === user?.uid ? 'Me' : 'Them'}: ${m.text}`).join('\n');
       
-      const response = await ai.models.generateContent({
+      const response = await aiRef.current.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Given this conversation history:\n${lastMessages}\n\nSuggest 3 short, helpful, and natural sounding replies for "Me". Return as a JSON array of strings.`,
         config: {
@@ -272,7 +282,8 @@ export default function App() {
       senderId: user.uid,
       text: messageText,
       timestamp: serverTimestamp(),
-      type: 'text'
+      type: 'text',
+      participants: selectedConvo.participants
     };
 
     try {
