@@ -61,25 +61,53 @@ let currentRoomId = 'general'; // Default
 let unsubscribeMessages = null;
 
 // --- AUTH LOGIC ---
-loginBtn.onclick = () => signInWithPopup(auth, provider).catch(err => showToast(err.message));
-logoutBtn.onclick = () => signOut(auth);
+loginBtn.addEventListener('click', () => {
+    console.log("Attempting Google Login...");
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<div class="spinner w-5 h-5 border-2 border-slate-400 border-t-black"></div>';
+    
+    signInWithPopup(auth, provider)
+        .then((result) => {
+            console.log("Login success:", result.user.email);
+            showToast("Welcome, " + result.user.displayName, "success");
+        })
+        .catch(err => {
+            console.error("Login error:", err);
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" class="w-5 h-5"> Sign in with Google';
+            
+            if (err.code === 'auth/popup-blocked') {
+                showToast("Please allow popups for this site.");
+            } else {
+                showToast(err.code + ": " + err.message);
+            }
+        });
+});
+
+logoutBtn.addEventListener('click', () => {
+    signOut(auth).then(() => {
+        showToast("Logged out successfully", "success");
+    }).catch(err => showToast(err.message));
+});
 
 onAuthStateChanged(auth, async (user) => {
     // Reveal app and hide loading
-    loadingScreen.style.opacity = '0';
-    setTimeout(() => loadingScreen.classList.add('hidden'), 500);
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => loadingScreen.classList.add('hidden'), 500);
+    }
 
     if (user) {
         currentUser = user;
-        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
+        userAvatar.src = user.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.uid;
         
-        // Sync user profile
-        await setDoc(doc(db, 'users', user.uid), {
+        // Non-blocking profile sync
+        setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             displayName: user.displayName,
             photoURL: user.photoURL,
             lastSeen: serverTimestamp()
-        }, { merge: true });
+        }, { merge: true }).catch(e => console.warn("Profile sync delay:", e));
 
         authScreen.classList.add('hidden');
         appScreen.classList.remove('hidden');
@@ -90,6 +118,10 @@ onAuthStateChanged(auth, async (user) => {
         currentUser = null;
         authScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
+        
+        // Reset button state
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" class="w-5 h-5"> Sign in with Google';
     }
 });
 
