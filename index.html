@@ -174,10 +174,12 @@
             const ls = document.getElementById('loading-screen');
             if (ls && !ls.classList.contains('hidden')) {
                 ls.style.opacity = '0';
+                ls.style.pointerEvents = 'none';
                 setTimeout(() => ls.classList.add('hidden'), 500);
+                document.body.style.overflow = 'auto';
                 console.warn("Loading safety timeout triggered.");
             }
-        }, 3000);
+        }, 4000); // 4 seconds
     </script>
 </body>
 </html>

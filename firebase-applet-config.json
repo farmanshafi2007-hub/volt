@@ -3,6 +3,8 @@
   "appId": "1:1004274449142:web:a1c433d1c869532d254ad7",
   "apiKey": "AIzaSyCUD3Lk0IQd0VSxHloJaHjkLBjQVJmSY80",
   "authDomain": "direct-bivouac-s07pf.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-c7f24d3c-f8c2-4954-a163-6bc91b462494",
   "storageBucket": "direct-bivouac-s07pf.firebasestorage.app",
-  "messagingSenderId": "1004274449142"
+  "messagingSenderId": "1004274449142",
+  "measurementId": ""
 }

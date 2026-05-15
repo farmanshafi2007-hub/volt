@@ -70,12 +70,41 @@ function showToast(message, type = 'error') {
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.innerText = message;
+    if (type === 'success') toast.style.borderLeft = '4px solid #10b981';
     toastContainer.appendChild(toast);
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     }, 4000);
+}
+
+// --- ERROR HANDLING ---
+const OperationType = {
+  CREATE: 'create',
+  UPDATE: 'update',
+  DELETE: 'delete',
+  LIST: 'list',
+  GET: 'get',
+  WRITE: 'write',
+};
+
+function handleFirestoreError(error, operationType, path) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  showToast(`Firestore ${operationType} failed on ${path || 'unknown'}. See console for details.`);
+  // We don't necessarily want to re-throw if we want the app to stay alive, 
+  // but the guidelines say throw a new error with JSON message.
+  // throw new Error(JSON.stringify(errInfo));
 }
 
 // --- STATE ---
@@ -131,16 +160,38 @@ onAuthStateChanged(auth, async (user) => {
         userAvatar.src = user.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.uid;
         
         // Non-blocking profile sync
+        const userPath = `users/${user.uid}`;
         setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             displayName: user.displayName,
             photoURL: user.photoURL,
             lastSeen: serverTimestamp()
-        }, { merge: true }).catch(e => console.warn("Profile sync delay:", e));
+        }, { merge: true }).catch(e => handleFirestoreError(e, OperationType.UPDATE, userPath));
 
         authScreen.classList.add('hidden');
         appScreen.classList.remove('hidden');
         
+        // Ensure General Room exists
+        const generalRoomRef = doc(db, 'conversations', 'general');
+        getDoc(generalRoomRef).then(snap => {
+            if (!snap.exists()) {
+                setDoc(generalRoomRef, {
+                    name: "General Room",
+                    participants: [user.uid],
+                    createdAt: serverTimestamp(),
+                    isPublic: true
+                }).catch(e => console.warn("General room init error:", e));
+            } else {
+                // Join if not already in participants
+                const data = snap.data();
+                if (!data.participants || !data.participants.includes(user.uid)) {
+                    setDoc(generalRoomRef, {
+                        participants: [...(data.participants || []), user.uid]
+                    }, { merge: true }).catch(e => console.warn("General room join error:", e));
+                }
+            }
+        });
+
         loadRooms();
         switchRoom('general', 'General Room');
     } else {
@@ -167,6 +218,7 @@ function switchRoom(id, name) {
     // Load messages
     if (unsubscribeMessages) unsubscribeMessages();
     
+    const messagesPath = `conversations/${id}/messages`;
     const messagesQuery = query(
         collection(db, 'conversations', id, 'messages'),
         orderBy('createdAt', 'asc')
@@ -179,6 +231,8 @@ function switchRoom(id, name) {
             renderMessage(msg);
         });
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }, (error) => {
+        handleFirestoreError(error, OperationType.GET, messagesPath);
     });
 }
 
@@ -198,7 +252,8 @@ function renderMessage(msg) {
 
 // --- ROOM LOGIC ---
 async function loadRooms() {
-    const q = query(collection(db, 'conversations'), where('participants', 'array-contains', currentUser.uid));
+    const roomsPath = 'conversations';
+    const q = query(collection(db, roomsPath), where('participants', 'array-contains', currentUser.uid));
     onSnapshot(q, (snapshot) => {
         roomsList.innerHTML = '';
         
@@ -224,6 +279,8 @@ async function loadRooms() {
             div.onclick = () => switchRoom(doc.id, room.name || 'Private Room');
             roomsList.appendChild(div);
         });
+    }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, roomsPath);
     });
 }
 
@@ -236,6 +293,7 @@ chatForm.onsubmit = async (e) => {
     messageInput.value = '';
     
     try {
+        const msgPath = `conversations/${currentRoomId}/messages`;
         await addDoc(collection(db, 'conversations', currentRoomId, 'messages'), {
             text: text,
             userId: currentUser.uid,
@@ -251,8 +309,7 @@ chatForm.onsubmit = async (e) => {
         }, { merge: true });
 
     } catch (err) {
-        console.error(err);
-        showToast("Permission denied or error sending message.");
+        handleFirestoreError(err, OperationType.WRITE, `conversations/${currentRoomId}`);
     }
 };
 
@@ -261,6 +318,7 @@ joinBtn.onclick = async () => {
     if (!code) return;
 
     try {
+        const roomPath = `conversations/${code}`;
         const roomRef = doc(db, 'conversations', code);
         const roomSnap = await getDoc(roomRef);
 
@@ -285,7 +343,7 @@ joinBtn.onclick = async () => {
         joinModal.classList.add('hidden');
         roomCodeInput.value = '';
     } catch (err) {
-        showToast("Failed to join: " + err.message);
+        handleFirestoreError(err, OperationType.WRITE, `conversations/${code}`);
     }
 };
 
