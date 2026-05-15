@@ -131,6 +131,9 @@ if (loginBtn) {
                 
                 if (err.code === 'auth/popup-blocked') {
                     showToast("Please allow popups for this site.");
+                } else if (err.code === 'auth/unauthorized-domain') {
+                    showToast("Domain not authorized. Please add this domain to Firebase Console > Auth > Settings > Authorized Domains.");
+                    console.error("ADD THIS DOMAIN TO FIREBASE:", window.location.hostname);
                 } else {
                     showToast(err.code + ": " + err.message);
                 }
