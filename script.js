@@ -60,7 +60,15 @@ const roomCodeInput = document.getElementById('room-code-input');
 const joinBtn = document.getElementById('btn-join-room');
 const showJoinBtn = document.getElementById('btn-show-join');
 const joinModal = document.getElementById('join-modal');
-const closeModalBtn = document.getElementById('btn-close-modal');
+const closeJoinBtn = document.getElementById('btn-close-join');
+
+const createModal = document.getElementById('create-modal');
+const showCreateBtn = document.getElementById('btn-show-create');
+const closeCreateBtn = document.getElementById('btn-close-create');
+const createBtn = document.getElementById('btn-create-room');
+const createRoomNameInput = document.getElementById('create-room-name');
+const createRoomDescInput = document.getElementById('create-room-desc');
+
 const roomsList = document.getElementById('rooms-container');
 const btnBack = document.getElementById('btn-back');
 const sidebar = document.getElementById('sidebar');
@@ -132,8 +140,8 @@ if (loginBtn) {
                 if (err.code === 'auth/popup-blocked') {
                     showToast("Please allow popups for this site.");
                 } else if (err.code === 'auth/unauthorized-domain') {
-                    showToast("Domain not authorized. Please add this domain to Firebase Console > Auth > Settings > Authorized Domains.");
-                    console.error("ADD THIS DOMAIN TO FIREBASE:", window.location.hostname);
+                    showToast("Domain missing from Firebase. Open console and add: " + window.location.hostname);
+                    console.error("FIREBASE ERROR: 'auth/unauthorized-domain'. \n1. Go to Firebase Console > Authentication > Settings > Authorized Domains. \n2. Add this domain: " + window.location.hostname);
                 } else {
                     showToast(err.code + ": " + err.message);
                 }
@@ -274,10 +282,11 @@ async function loadRooms() {
             div.className = `p-4 rounded-2xl glass hover:bg-white/5 cursor-pointer transition-all border ${currentRoomId === doc.id ? 'border-indigo-500/50' : 'border-transparent'}`;
             div.innerHTML = `
                 <div class="flex justify-between items-start">
-                    <h3 class="font-bold text-white text-sm">${room.name || 'Private Room'}</h3>
-                    <span class="text-[10px] text-emerald-400 font-bold uppercase">Chat</span>
+                    <h3 class="font-bold text-white text-sm truncate pr-2">${room.name || 'Private Room'}</h3>
+                    <span class="text-[10px] text-emerald-400 font-bold uppercase shrink-0">Chat</span>
                 </div>
-                <p class="text-[10px] text-slate-500 mt-1">${doc.id}</p>
+                ${room.description ? `<p class="text-[10px] text-slate-400 mt-1 line-clamp-1">${room.description}</p>` : ''}
+                <p class="text-[10px] text-slate-600 mt-1 uppercase tracking-tighter">${doc.id.substring(0, 8)}...</p>
             `;
             div.onclick = () => switchRoom(doc.id, room.name || 'Private Room');
             roomsList.appendChild(div);
@@ -318,31 +327,27 @@ chatForm.onsubmit = async (e) => {
 
 joinBtn.onclick = async () => {
     const code = roomCodeInput.value.trim();
-    if (!code) return;
+    if (!code) return showToast("Enter a room code");
 
     try {
-        const roomPath = `conversations/${code}`;
         const roomRef = doc(db, 'conversations', code);
         const roomSnap = await getDoc(roomRef);
 
         if (!roomSnap.exists()) {
-            // Create if doesn't exist
+            return showToast("Room does not exist. Use 'Create' if you want a new one.");
+        } 
+        
+        // Join existing
+        const participants = roomSnap.data().participants || [];
+        if (!participants.includes(currentUser.uid)) {
             await setDoc(roomRef, {
-                name: "Private Room",
-                participants: [currentUser.uid],
-                createdAt: serverTimestamp()
-            });
-        } else {
-            // Join existing
-            const participants = roomSnap.data().participants || [];
-            if (!participants.includes(currentUser.uid)) {
-                await setDoc(roomRef, {
-                    participants: [...participants, currentUser.uid]
-                }, { merge: true });
-            }
+                participants: [...participants, currentUser.uid],
+                updatedAt: serverTimestamp()
+            }, { merge: true });
         }
         
-        switchRoom(code, "Private Room");
+        showToast("Joined successfully", "success");
+        switchRoom(code, roomSnap.data().name || "Private Room");
         joinModal.classList.add('hidden');
         roomCodeInput.value = '';
     } catch (err) {
@@ -350,9 +355,44 @@ joinBtn.onclick = async () => {
     }
 };
 
+createBtn.onclick = async () => {
+    const name = createRoomNameInput.value.trim();
+    const desc = createRoomDescInput.value.trim();
+    if (!name) return showToast("Room name is required");
+
+    createBtn.disabled = true;
+    createBtn.innerText = "Creating...";
+
+    try {
+        const roomRef = await addDoc(collection(db, 'conversations'), {
+            name: name,
+            description: desc,
+            participants: [currentUser.uid],
+            creatorId: currentUser.uid,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+        
+        showToast("Room created!", "success");
+        switchRoom(roomRef.id, name);
+        createModal.classList.add('hidden');
+        createRoomNameInput.value = '';
+        createRoomDescInput.value = '';
+    } catch (err) {
+        handleFirestoreError(err, OperationType.CREATE, 'conversations');
+    } finally {
+        createBtn.disabled = false;
+        createBtn.innerText = "Create";
+    }
+};
+
 // Modal controls
 showJoinBtn.onclick = () => joinModal.classList.remove('hidden');
-closeModalBtn.onclick = () => joinModal.classList.add('hidden');
+closeJoinBtn.onclick = () => joinModal.classList.add('hidden');
+
+showCreateBtn.onclick = () => createModal.classList.remove('hidden');
+closeCreateBtn.onclick = () => createModal.classList.add('hidden');
+
 btnBack.onclick = () => sidebar.classList.remove('-translate-x-full');
 
 // Auto-focus input on switch

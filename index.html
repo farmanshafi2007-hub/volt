@@ -30,6 +30,12 @@
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; pointer-events: none; }
         .toast { pointer-events: auto; background: #222; color: white; padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); opacity: 0; transform: translateX(20px); transition: all 0.3s ease; font-size: 14px; }
         .toast.show { opacity: 1; transform: translateX(0); }
+
+        /* Layout Adjustments */
+        @media (max-width: 767px) {
+            #sidebar { position: absolute; height: 100%; top: 0; left: 0; }
+            #chat-area { width: 100% !important; }
+        }
     </style>
 </head>
 <body class="selection:bg-indigo-500/30">
@@ -104,9 +110,12 @@
             </div>
 
             <!-- Join/Create -->
-            <div class="p-6 bg-black/40 border-t border-white/5 space-y-3">
-                <button id="btn-show-join" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
-                    <ion-icon name="add-circle-outline"></ion-icon> Join Room
+            <div class="p-6 bg-black/40 border-t border-white/5 grid grid-cols-2 gap-3">
+                <button id="btn-show-join" class="py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
+                    <ion-icon name="enter-outline"></ion-icon> Join
+                </button>
+                <button id="btn-show-create" class="py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 text-sm">
+                    <ion-icon name="add-circle-outline"></ion-icon> Create
                 </button>
             </div>
         </div>
@@ -154,14 +163,43 @@
     </div>
 
     <!-- Modals -->
+    <!-- Join Modal -->
     <div id="join-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
-        <div class="glass p-8 rounded-[32px] max-w-sm w-full relative z-10 space-y-6">
-            <h3 class="text-2xl font-black italic tracking-tight">Join Room</h3>
-            <input type="text" id="room-code-input" placeholder="Enter Room Code" class="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-indigo-500">
-            <div class="flex gap-3">
-                <button id="btn-close-modal" class="flex-1 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl active:scale-95">Cancel</button>
+        <div class="glass p-8 rounded-[32px] max-w-sm w-full relative z-10 space-y-6 animate-fade-in">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-black italic tracking-tight">Join Room</h3>
+                <p class="text-xs text-slate-500 font-medium">Enter a room code to participate.</p>
+            </div>
+            <input type="text" id="room-code-input" placeholder="Room Code (e.g. general)" class="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 transition-all text-white">
+            <div class="flex gap-3 pt-2">
+                <button id="btn-close-join" class="flex-1 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl active:scale-95">Cancel</button>
                 <button id="btn-join-room" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl active:scale-95 shadow-lg shadow-indigo-500/20">Join</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Modal -->
+    <div id="create-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="glass p-8 rounded-[32px] max-w-sm w-full relative z-10 space-y-6 animate-fade-in">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-black italic tracking-tight">Create Room</h3>
+                <p class="text-xs text-slate-500 font-medium">Start a new conversation context.</p>
+            </div>
+            <div class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 px-1">Room Name</label>
+                    <input type="text" id="create-room-name" placeholder="Team Sync, Study Group..." class="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 transition-all text-white">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 px-1">Description (Optional)</label>
+                    <textarea id="create-room-desc" placeholder="What's this room about?" rows="3" class="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 transition-all text-white resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button id="btn-close-create" class="flex-1 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl active:scale-95">Cancel</button>
+                <button id="btn-create-room" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl active:scale-95 shadow-lg shadow-indigo-500/20">Create</button>
             </div>
         </div>
     </div>
