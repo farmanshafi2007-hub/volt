@@ -5,6 +5,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// --- GLOBAL ERROR LOGGING ---
+window.onerror = function(msg, url, line, col, error) {
+    console.error("Global Error:", msg, "at", url, line);
+    showToast("System Error: " + msg);
+    return false;
+};
+
+window.onunhandledrejection = function(event) {
+    console.error("Unhandled Promise Rejection:", event.reason);
+    showToast("Promise Error: " + (event.reason ? event.reason.message : "Unknown"));
+};
+
 // --- CONFIGURATION ---
 const firebaseConfig = {
     projectId: "direct-bivouac-s07pf",
@@ -16,10 +28,21 @@ const firebaseConfig = {
 };
 
 // --- INITIALIZATION ---
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app, "ai-studio-c7f24d3c-f8c2-4954-a163-6bc91b462494");
-const provider = new GoogleAuthProvider();
+let db, auth, provider;
+try {
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app, "ai-studio-c7f24d3c-f8c2-4954-a163-6bc91b462494");
+    provider = new GoogleAuthProvider();
+} catch (err) {
+    console.error("Firebase init error:", err);
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.pointerEvents = 'none';
+        setTimeout(() => loadingScreen.classList.add('hidden'), 500);
+    }
+    setTimeout(() => showToast("Init Error: " + err.message), 1000);
+}
 
 // --- DOM ELEMENTS ---
 const loadingScreen = document.getElementById('loading-screen');
@@ -61,28 +84,30 @@ let currentRoomId = 'general'; // Default
 let unsubscribeMessages = null;
 
 // --- AUTH LOGIC ---
-loginBtn.addEventListener('click', () => {
-    console.log("Attempting Google Login...");
-    loginBtn.disabled = true;
-    loginBtn.innerHTML = '<div class="spinner w-5 h-5 border-2 border-slate-400 border-t-black"></div>';
-    
-    signInWithPopup(auth, provider)
-        .then((result) => {
-            console.log("Login success:", result.user.email);
-            showToast("Welcome, " + result.user.displayName, "success");
-        })
-        .catch(err => {
-            console.error("Login error:", err);
-            loginBtn.disabled = false;
-            loginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" class="w-5 h-5"> Sign in with Google';
-            
-            if (err.code === 'auth/popup-blocked') {
-                showToast("Please allow popups for this site.");
-            } else {
-                showToast(err.code + ": " + err.message);
-            }
-        });
-});
+if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        console.log("Attempting Google Login...");
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<div class="spinner w-5 h-5 border-2 border-slate-400 border-t-black"></div>';
+        
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                console.log("Login success:", result.user.email);
+                showToast("Welcome, " + result.user.displayName, "success");
+            })
+            .catch(err => {
+                console.error("Login error:", err);
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" class="w-5 h-5"> Sign in with Google';
+                
+                if (err.code === 'auth/popup-blocked') {
+                    showToast("Please allow popups for this site.");
+                } else {
+                    showToast(err.code + ": " + err.message);
+                }
+            });
+    });
+}
 
 logoutBtn.addEventListener('click', () => {
     signOut(auth).then(() => {
@@ -94,7 +119,11 @@ onAuthStateChanged(auth, async (user) => {
     // Reveal app and hide loading
     if (loadingScreen) {
         loadingScreen.style.opacity = '0';
-        setTimeout(() => loadingScreen.classList.add('hidden'), 500);
+        loadingScreen.style.pointerEvents = 'none';
+        setTimeout(() => {
+            loadingScreen.classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Re-enable scroll
+        }, 500);
     }
 
     if (user) {
