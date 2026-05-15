@@ -51,6 +51,7 @@ export default function App() {
   const [selectedConvo, setSelectedConvo] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copyFeedback, setCopyFeedback] = useState(false);
   const [inputText, setInputText] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
   const [searchEmail, setSearchEmail] = useState('');
@@ -59,12 +60,23 @@ export default function App() {
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
-
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopyFeedback(true);
+    setTimeout(() => setCopyFeedback(false), 2000);
+  };
 
   // Auth & Profile Listener
   useEffect(() => {
+    // Safety timeout for loading
+    const loadTimeout = setTimeout(() => {
+      if (loading) setLoading(false);
+    }, 5000);
+
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      clearTimeout(loadTimeout);
       try {
         if (u) {
           const userDocRef = doc(db, 'users', u.uid);
@@ -236,8 +248,9 @@ export default function App() {
   // AI Setup
   const aiRef = useRef<GoogleGenAI | null>(null);
   useEffect(() => {
-    if (process.env.GEMINI_API_KEY) {
-      aiRef.current = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const key = process.env.GEMINI_API_KEY;
+    if (key && key !== "undefined" && key !== "") {
+      aiRef.current = new GoogleGenAI({ apiKey: key });
     }
   }, []);
 
@@ -389,12 +402,24 @@ export default function App() {
         animate={{ opacity: 1, y: 0 }}
         className="glass p-8 rounded-3xl max-w-sm w-full text-center space-y-6 relative z-10"
       >
-        <div className="mx-auto w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-indigo-500/40 shadow-xl">
-          <MessageSquare className="text-white w-8 h-8" />
+        <div className="mx-auto w-20 h-20 bg-indigo-600 rounded-[28px] flex items-center justify-center shadow-indigo-500/40 shadow-2xl relative">
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 4 }}
+          >
+            <MessageSquare className="text-white w-10 h-10" />
+          </motion.div>
+          <motion.div 
+            animate={{ opacity: [0, 1, 0], y: [-20, -40, -60], x: [20, 40, 20] }}
+            transition={{ repeat: Infinity, duration: 3 }}
+            className="absolute -top-2 -right-2 bg-emerald-500 p-1.5 rounded-lg shadow-lg"
+          >
+             <Sparkles className="w-4 h-4 text-white" />
+          </motion.div>
         </div>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Volt Message</h1>
-          <p className="text-slate-400">Secure, lightning-fast communication powered by Pulse engine.</p>
+        <div className="space-y-3">
+          <h1 className="text-4xl font-black tracking-tighter text-white">VOLT</h1>
+          <p className="text-slate-400 text-sm leading-relaxed px-4">Secure, lightning-fast communication powered by Pulse engine. Connect instantly with room codes.</p>
         </div>
         <button 
           onClick={signInWithGoogle}
@@ -409,7 +434,31 @@ export default function App() {
   );
 
   return (
-    <div className="h-screen w-full flex bg-black overflow-hidden relative">
+    <div className="h-screen w-full flex bg-black overflow-hidden relative font-sans selection:bg-indigo-500/30">
+      {/* Animated Starfield Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[#020202]" />
+        {[...Array(50)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ 
+              opacity: Math.random(), 
+              x: Math.random() * window.innerWidth, 
+              y: Math.random() * window.innerHeight 
+            }}
+            animate={{ 
+              opacity: [0.2, 0.8, 0.2],
+              scale: [1, 1.5, 1],
+            }}
+            transition={{ 
+              duration: 2 + Math.random() * 4, 
+              repeat: Infinity,
+              delay: Math.random() * 5
+            }}
+            className="absolute w-0.5 h-0.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+          />
+        ))}
+      </div>
       {/* Mobile Header Overlay if convo selected */}
       <AnimatePresence>
         {selectedConvo && (
@@ -450,10 +499,21 @@ export default function App() {
             </div>
             <div>
               <h2 className="font-semibold text-white leading-tight">{profile?.displayName}</h2>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Code: {profile?.roomCode || '...'}</p>
-              </div>
+              <button 
+                onClick={() => profile?.roomCode && copyToClipboard(profile.roomCode)}
+                className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/10 hover:border-indigo-500/50 hover:bg-white/10 transition-all group/code cursor-pointer active:scale-95"
+              >
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  <span className="text-indigo-400">ID:</span> {profile?.roomCode || '...'}
+                </p>
+                <span className={cn(
+                  "text-[8px] uppercase font-black transition-all",
+                  copyFeedback ? "text-emerald-400" : "text-transparent group-hover/code:text-white/40"
+                )}>
+                  {copyFeedback ? 'Copied!' : 'Copy'}
+                </span>
+              </button>
             </div>
           </div>
           <div className="flex gap-1">
@@ -520,23 +580,32 @@ export default function App() {
                     isSelected ? "bg-indigo-600 text-white" : "hover:bg-white/5 text-slate-400 hover:text-slate-200"
                   )}
                 >
-                  <div className="relative shrink-0">
-                    <img src={details.photoURL} alt={details.displayName} className="w-12 h-12 rounded-full object-cover border border-white/5" />
-                    {!isSelected && <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#050505] rounded-full" />}
+                  {isSelected && (
+                    <motion.div 
+                      layoutId="active-highlight" 
+                      className="absolute inset-0 bg-indigo-600/10 rounded-2xl z-0" 
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <div className="relative shrink-0 z-10">
+                    <img src={details.photoURL} alt={details.displayName} className="w-12 h-12 rounded-full object-cover border border-white/10 group-hover:border-indigo-500/50 transition-colors" />
+                    {!isSelected && <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#050505] rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />}
                   </div>
-                  <div className="flex-1 text-left min-w-0">
+                  <div className="flex-1 text-left min-w-0 z-10">
                     <div className="flex justify-between items-start">
-                      <h4 className={cn("font-medium truncate", isSelected ? "text-white" : "text-slate-200")}>{details.displayName}</h4>
-                      <span className={cn("text-[10px] uppercase tracking-wider font-semibold opacity-60 ml-2 whitespace-nowrap")}>
+                      <h4 className={cn("font-semibold truncate tracking-tight", isSelected ? "text-white" : "text-slate-200")}>{details.displayName}</h4>
+                      <span className={cn("text-[10px] uppercase tracking-wider font-bold opacity-60 ml-2 whitespace-nowrap", isSelected ? "text-indigo-100" : "text-slate-500")}>
                         {convo.updatedAt ? format((convo.updatedAt as Timestamp).toDate(), 'HH:mm') : ''}
                       </span>
                     </div>
-                    <p className={cn("text-xs truncate font-medium", isSelected ? "text-indigo-100" : "text-slate-500")}>
-                      {convo.lastMessage?.senderId === user?.uid ? 'You: ' : ''}
+                    <p className={cn("text-xs truncate font-medium flex items-center gap-1", isSelected ? "text-indigo-100/70" : "text-slate-500")}>
+                      {convo.lastMessage?.senderId === user?.uid && (
+                        <span className="text-emerald-500">✓</span>
+                      )}
                       {convo.lastMessage?.text || 'No messages yet'}
                     </p>
                   </div>
-                  {isSelected && <motion.div layoutId="active-pill" className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-white rounded-full" />}
+                  {isSelected && <motion.div layoutId="active-pill" className="absolute left-0 top-1/3 bottom-1/3 w-1 bg-white rounded-full z-10" />}
                 </button>
               );
             });
@@ -634,13 +703,21 @@ export default function App() {
                           <motion.div 
                             layout
                             className={cn(
-                              "px-5 py-3.5 rounded-[22px] text-sm leading-relaxed shadow-sm",
+                              "px-5 py-3.5 rounded-[22px] text-sm leading-relaxed shadow-lg relative",
                               isMe 
-                                ? "bg-indigo-600 text-white rounded-br-none" 
-                                : "bg-[#1A1A1A] text-slate-200 rounded-bl-none"
+                                ? "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-br-none" 
+                                : "bg-[#1A1A1A] text-slate-200 rounded-bl-none border border-white/5"
                             )}
                           >
                             {msg.text}
+                            {isMe && (
+                              <div className="absolute -bottom-1 -right-1 flex gap-0.5">
+                                <span className={cn(
+                                  "text-[10px]",
+                                  msg.timestamp ? "text-emerald-400" : "text-white/40"
+                                )}>✓✓</span>
+                              </div>
+                            )}
                           </motion.div>
                           <p className={cn(
                             "text-[10px] text-slate-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap",
