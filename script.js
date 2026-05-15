@@ -219,7 +219,7 @@ async function joinRoom(roomCode, user = currentUser) {
 async function joinInitialRoom(user) {
     const params = new URLSearchParams(window.location.search);
     const roomCodeFromUrl = params.get('room');
-    const roomCodeFromInput = initialRoomCodeInput.value.trim();
+    const roomCodeFromInput = initialRoomCodeInput ? initialRoomCodeInput.value.trim() : '';
     const targetRoom = roomCodeFromUrl || roomCodeFromInput || 'general';
     
     await joinRoom(targetRoom, user);
@@ -364,9 +364,10 @@ onAuthStateChanged(auth, async (user) => {
         authScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
         
-        // Reset button state
-        loginBtn.disabled = false;
-        loginBtn.innerHTML = 'ENTER ROOM';
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = 'Initialize Session';
+        }
     }
 });
 
@@ -591,35 +592,7 @@ chatForm.onsubmit = async (e) => {
     }
 };
 
-joinBtn.onclick = async () => {
-    const code = roomCodeInput.value.trim();
-    if (!code) return showToast("Enter a room code");
-
-    try {
-        const roomRef = doc(db, 'conversations', code);
-        const roomSnap = await getDoc(roomRef);
-
-        if (!roomSnap.exists()) {
-            return showToast("Room does not exist. Use 'Create' if you want a new one.");
-        } 
-        
-        // Join existing
-        const participants = roomSnap.data().participants || [];
-        if (!participants.includes(currentUser.uid)) {
-            await setDoc(roomRef, {
-                participants: [...participants, currentUser.uid],
-                updatedAt: serverTimestamp()
-            }, { merge: true });
-        }
-        
-        showToast("Joined successfully", "success");
-        switchRoom(code, roomSnap.data().name || "Private Room");
-        joinModal.classList.add('hidden');
-        roomCodeInput.value = '';
-    } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, `conversations/${code}`);
-    }
-};
+// Redundant join handler removed as it's handled by btnQuickJoin
 
 createBtn.onclick = async () => {
     const name = createRoomNameInput.value.trim();
