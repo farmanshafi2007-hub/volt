@@ -391,6 +391,14 @@ function switchRoom(id, name) {
     // Load messages
     if (unsubscribeMessages) unsubscribeMessages();
     
+    // Set loading state
+    messagesContainer.innerHTML = `
+        <div class="flex-1 flex flex-col justify-center items-center text-center py-20 opacity-40">
+            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500 mb-4"></div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white">Syncing Flux Streams...</p>
+        </div>
+    `;
+    
     const messagesPath = `conversations/${id}/messages`;
     const messagesQuery = query(
         collection(db, 'conversations', id, 'messages'),
@@ -656,3 +664,11 @@ window.addEventListener('DOMContentLoaded', () => {
 currentRoomName.onclick = () => {
     if(window.innerWidth < 768) sidebar.classList.remove('closed');
 };
+
+// Handle Enter key for sending messages
+messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        chatForm.requestSubmit();
+    }
+});

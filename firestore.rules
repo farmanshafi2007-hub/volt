@@ -39,7 +39,9 @@ service cloud.firestore {
              data.participants.size() >= 1 &&
              data.participants.size() <= 100 &&
              (data.get('name', '') is string && data.get('name', '').size() <= 50) &&
-             (data.get('type', 'room') in ['room', 'dm']);
+             (data.get('type', 'room') in ['room', 'dm']) &&
+             (data.get('isPublic', false) is bool) &&
+             (data.get('participantInfo', {}) is map);
     }
 
     function isValidMessage(data) {
