@@ -76,6 +76,7 @@ export default function App() {
     }, 5000);
 
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      console.log('Auth state changed:', u?.uid || 'no user');
       clearTimeout(loadTimeout);
       try {
         if (u) {
@@ -146,6 +147,7 @@ export default function App() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('Conversations snapshot:', snapshot.size, 'docs');
       const convos = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -248,9 +250,14 @@ export default function App() {
   // AI Setup
   const aiRef = useRef<GoogleGenAI | null>(null);
   useEffect(() => {
-    const key = process.env.GEMINI_API_KEY;
-    if (key && key !== "undefined" && key !== "") {
-      aiRef.current = new GoogleGenAI({ apiKey: key });
+    try {
+      // Use a safer way to access the key that won't crash if process is undefined
+      const key = typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined;
+      if (key && key !== "undefined" && key !== "") {
+        aiRef.current = new GoogleGenAI({ apiKey: key });
+      }
+    } catch (e) {
+      console.warn('AI initialization failed:', e);
     }
   }, []);
 
@@ -390,7 +397,29 @@ export default function App() {
     }
   };
 
-  if (loading) return <div className="h-screen w-full flex items-center justify-center bg-black"><motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity }} className="h-12 w-12 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" /></div>;
+  // Scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, selectedConvo]);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#050505] font-sans">
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.2, 1],
+            rotate: [0, 180, 360],
+            borderRadius: ["20%", "20%", "50%", "50%", "20%"]
+          }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="w-16 h-16 bg-indigo-600 shadow-[0_0_30px_rgba(79,70,229,0.3)] mb-6"
+        />
+        <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] animate-pulse">Initializing Pulse System...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -737,8 +766,10 @@ export default function App() {
                         )}>
                           <motion.div 
                             layout
+                            initial={{ opacity: 0, x: isMe ? 20 : -20, scale: 0.95 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
                             className={cn(
-                              "px-5 py-3.5 rounded-[22px] text-sm leading-relaxed shadow-lg relative",
+                              "px-5 py-3.5 rounded-[22px] text-sm leading-relaxed shadow-lg relative group/msg",
                               isMe 
                                 ? "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-br-none" 
                                 : "bg-[#1A1A1A] text-slate-200 rounded-bl-none border border-white/5"
