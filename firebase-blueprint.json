@@ -19,6 +19,7 @@
       "properties": {
         "name": { "type": "string" },
         "participants": { "type": "array", "items": { "type": "string" } },
+        "isPublic": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "lastMessage": { "type": "string" },
         "updatedAt": { "type": "string", "format": "date-time" }

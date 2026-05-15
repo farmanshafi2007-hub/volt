@@ -3,154 +3,273 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOLT | Secure Chat</title>
+    <title>VOLT | Techno-Deep Chat</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Ionicons for some visuals -->
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #020202; color: white; -webkit-tap-highlight-color: transparent; }
-        .glass { background: rgba(26, 26, 26, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        :root {
+            --bg: #050505;
+            --surface: #0a0a0a;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.12);
+            --border: rgba(255, 255, 255, 0.05);
+            --text-muted: #64748b;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tech-grid {
+            background-image: 
+                linear-gradient(to right, var(--border) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .glass {
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+        }
+
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        
-        .hidden { display: none !important; }
 
-        /* Loading Overlay */
-        #loading-screen { position: fixed; inset: 0; background: #020202; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
-        .spinner { width: 32px; height: 32px; border: 3px solid rgba(99, 102, 241, 0.2); border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Toast Container */
-        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; pointer-events: none; }
-        .toast { pointer-events: auto; background: #222; color: white; padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); opacity: 0; transform: translateX(20px); transition: all 0.3s ease; font-size: 14px; }
-        .toast.show { opacity: 1; transform: translateX(0); }
-
-        /* Layout Adjustments */
-        @media (max-width: 767px) {
-            #sidebar { position: absolute; height: 100%; top: 0; left: 0; }
-            #chat-area { width: 100% !important; }
+        .glow-bg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vw;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
         }
+
+        .message-bubble {
+            max-width: 85%;
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .active-tab {
+            color: white !important;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        #sidebar {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @media (max-width: 767px) {
+            #sidebar.closed { transform: translateX(-100%); }
+            #sidebar { position: absolute; top: 0; left: 0; height: 100%; z-index: 50; width: 85%; }
+        }
+
+        .typing-indicator span {
+            width: 4px;
+            height: 4px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        /* Loading */
+        #loading-screen { position: fixed; inset: 0; background: #050505; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pulse-logo { font-size: 2.5rem; font-weight: 900; font-style: italic; letter-spacing: -0.05em; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); text-shadow: 0 0 20px var(--accent-glow); } 100% { opacity: 0.5; transform: scale(0.98); } }
+
+        /* Toast */
+        #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 300; pointer-events: none; }
+        .toast { pointer-events: auto; background: var(--accent); color: white; padding: 12px 24px; border-radius: 99px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(20px); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4); }
+        .toast.show { opacity: 1; transform: translateY(0); }
     </style>
 </head>
-<body class="selection:bg-indigo-500/30">
+<body class="tech-grid selection:bg-indigo-500/30">
+    <div class="glow-bg"></div>
 
     <div id="loading-screen">
-        <div class="spinner mb-4"></div>
-        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest animate-pulse">Pulse v1.2 Starting...</p>
+        <h1 class="pulse-logo text-white uppercase tracking-tighter">VOLT<span class="text-indigo-500">CHAT</span></h1>
+        <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2">Initializing Secure Stream</p>
     </div>
 
     <div id="toast-container"></div>
 
     <!-- Auth Screen -->
-    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
-        <div class="absolute inset-0 bg-[#020202] z-0"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/10 blur-[120px] rounded-full"></div>
-        
-        <div class="glass p-10 rounded-[40px] max-w-sm w-full text-center space-y-8 relative z-10 border border-white/10 shadow-2xl">
-            <div class="mx-auto w-20 h-20 bg-indigo-600 rounded-[28px] flex items-center justify-center shadow-indigo-500/40 shadow-2xl">
-                <ion-icon name="chatbubble-ellipses" class="text-white text-4xl"></ion-icon>
-            </div>
-            
-            <div class="space-y-2">
-                <h1 class="text-4xl font-black italic tracking-tighter text-white">VOLT</h1>
-                <p class="text-slate-400 text-xs font-medium uppercase tracking-widest">Enter the Chat</p>
+    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+        <div class="w-full max-w-md space-y-10 text-center glass p-10 rounded-[40px] relative border border-white/10 shadow-2xl">
+            <div class="space-y-3">
+                <div class="mx-auto w-16 h-16 bg-indigo-600/20 text-indigo-500 rounded-3xl flex items-center justify-center border border-indigo-500/40 shadow-2xl shadow-indigo-500/10 mb-2">
+                    <ion-icon name="flash" class="text-3xl"></ion-icon>
+                </div>
+                <h1 class="text-3xl font-black italic tracking-tighter text-white uppercase italic">VOLT<span class="text-indigo-500">CHAT</span></h1>
+                <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.25em]">Techno-Deep Communication</p>
             </div>
 
-            <div class="space-y-4">
-                <input type="text" id="user-name-input" placeholder="Your Display Name" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-indigo-500 transition-all text-white text-center font-bold">
-                <button id="login-button" class="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-slate-100 active:scale-95 transition-all shadow-xl">
-                    JOIN THE VOLT
+            <div class="space-y-5">
+                <button id="google-login-button" class="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-100 active:scale-95 transition-all shadow-xl">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google">
+                    SECURE GOOGLE LOGIN
                 </button>
-            </div>
 
-            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                No sign-up required • Pulse v1.2
-            </p>
+                <div class="flex items-center gap-4 py-2 opacity-50">
+                    <div class="h-px flex-1 bg-white/10"></div>
+                    <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest italic">or quick access</span>
+                    <div class="h-px flex-1 bg-white/10"></div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="text-left space-y-1">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-indigo-400 px-1 italic">Identity Display</label>
+                        <input type="text" id="user-name-input" placeholder="e.g. Ghost_01" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-indigo-500 transition-all text-white font-bold placeholder-slate-600">
+                    </div>
+                    
+                    <div class="text-left space-y-1">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-indigo-400 px-1 italic">Channel Target (Optional)</label>
+                        <input type="text" id="initial-room-code" placeholder="Leave empty for General HQ" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-indigo-500 transition-all text-white font-bold placeholder-slate-600">
+                    </div>
+                    
+                    <button id="login-button" class="w-full bg-white/5 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-white/10 active:scale-95 transition-all border border-white/10 uppercase italic tracking-widest text-xs">
+                        Initialize Session
+                    </button>
+                    
+                    <p class="text-[9px] text-slate-600 font-bold uppercase tracking-tighter italic">
+                        Note: Quick access requires admin-side activation.
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Main App Screen (Hidden initially) -->
-    <div id="app-screen" class="hidden h-screen w-full flex bg-black overflow-hidden relative">
+    <!-- Main Message App -->
+    <div id="app-screen" class="hidden fixed inset-0 flex h-full overflow-hidden bg-[#020202]">
         <!-- Sidebar -->
-        <div id="sidebar" class="w-full md:w-96 glass border-r border-white/5 flex flex-col z-20 transition-transform duration-300">
-            <!-- Header -->
-            <div class="p-6 border-b border-white/5 flex items-center justify-between">
+        <div id="sidebar" class="bg-[#080808] border-r border-white/5 flex flex-col closed">
+            <!-- User Profile Header -->
+            <div class="p-6 flex items-center justify-between border-b border-white/5 bg-black/40">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                        <ion-icon name="flash" class="text-white text-xl"></ion-icon>
+                    <div class="relative">
+                        <img id="user-avatar" src="" class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 shadow-lg" alt="Avatar">
+                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#080808]"></div>
                     </div>
-                    <span class="text-xl font-black tracking-tighter">VOLT</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button id="logout-button" class="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400">
-                        <ion-icon name="log-out-outline" class="text-xl"></ion-icon>
-                    </button>
-                    <img id="user-avatar" src="" class="w-10 h-10 rounded-full border border-white/10" alt="Me">
-                </div>
-            </div>
-
-            <!-- Rooms List -->
-            <div id="rooms-container" class="flex-1 overflow-y-auto p-4 space-y-2 hide-scrollbar">
-                <!-- Static Room as an example -->
-                <div class="p-4 rounded-2xl glass hover:bg-white/5 cursor-pointer transition-all border-indigo-500/50">
-                    <div class="flex justify-between items-start">
-                        <h3 class="font-bold text-white text-sm">General Room</h3>
-                        <span class="text-[10px] text-indigo-400 font-bold uppercase">Public</span>
+                    <div class="overflow-hidden">
+                        <h2 id="user-name" class="font-black text-xs text-white truncate uppercase italic tracking-tight">Agent Loading...</h2>
+                        <p class="text-[9px] text-emerald-500 font-black uppercase tracking-widest opacity-80">Link Active</p>
                     </div>
                 </div>
-            </div>
-
-            <!-- Join/Create -->
-            <div class="p-6 bg-black/40 border-t border-white/5 grid grid-cols-2 gap-3">
-                <button id="btn-show-join" class="py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
-                    <ion-icon name="enter-outline"></ion-icon> Join
+                <button id="logout-button" class="p-2 text-slate-500 hover:text-white transition-colors">
+                    <ion-icon name="log-out-outline" class="text-xl"></ion-icon>
                 </button>
-                <button id="btn-show-create" class="py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 text-sm">
-                    <ion-icon name="add-circle-outline"></ion-icon> Create
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-white/5 bg-black/20">
+                <button id="tab-rooms" class="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all active-tab">Rooms</button>
+                <button id="tab-people" class="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white transition-all">Network</button>
+            </div>
+
+            <!-- Content Area -->
+            <div id="rooms-container" class="flex-1 overflow-y-auto p-4 space-y-2 hide-scrollbar">
+                <!-- Rooms injected here -->
+            </div>
+
+            <div id="people-container" class="hidden flex-1 overflow-y-auto p-4 space-y-2 hide-scrollbar">
+                <div class="p-4 text-center">
+                    <p class="text-[9px] text-slate-600 font-black uppercase tracking-widest mb-4 italic">Available Intercepts</p>
+                    <div id="users-list" class="space-y-1 text-left"></div>
+                </div>
+            </div>
+
+            <!-- Actions Footer -->
+            <div class="p-6 border-t border-white/5 space-y-4 bg-black/40">
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 px-1 italic">Frequency Join</label>
+                    <div class="relative">
+                        <input type="text" id="join-room-input" placeholder="Enter session code..." class="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 transition-all text-[10px] font-black text-white italic tracking-wider pr-10 placeholder-slate-700">
+                        <button id="btn-quick-join" class="absolute right-2 top-1.5 p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 active:scale-90 flex items-center justify-center">
+                            <ion-icon name="arrow-forward" class="text-xs"></ion-icon>
+                        </button>
+                    </div>
+                </div>
+                <button id="show-create-room" class="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-slate-200 transition-all active:scale-95 italic">
+                    + Generate Channel
                 </button>
             </div>
         </div>
 
         <!-- Chat Area -->
-        <div id="chat-area" class="flex-1 flex flex-col bg-[#050505] relative transform md:translate-x-0">
-            <!-- Chat Header -->
-            <div id="chat-header" class="p-4 glass border-b border-white/5 flex items-center justify-between z-10">
+        <div id="chat-main" class="flex-1 flex flex-col h-full bg-[#050505] relative">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-4 px-6 border-b border-white/5 bg-black/40 backdrop-blur-md sticky top-0 z-20">
                 <div class="flex items-center gap-4">
-                    <button id="btn-back" class="md:hidden p-2 hover:bg-white/5 rounded-lg">
-                        <ion-icon name="chevron-back" class="text-2xl"></ion-icon>
+                    <button id="btn-back" class="md:hidden w-10 h-10 flex items-center justify-center text-white bg-white/5 border border-white/10 rounded-xl">
+                        <ion-icon name="chevron-back"></ion-icon>
                     </button>
-                    <div>
-                        <h2 id="current-room-name" class="text-lg font-bold text-white">Select a chat</h2>
-                        <p id="room-status" class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Active session</p>
+                    <div class="overflow-hidden">
+                        <h2 id="current-room-name" class="font-black text-base text-white truncate uppercase italic tracking-tight">HQ TERMINAL</h2>
+                        <div class="flex items-center gap-2">
+                            <code id="current-room-id-display" class="text-[10px] text-indigo-400 font-mono tracking-widest opacity-70">#general</code>
+                            <button id="btn-copy-room" class="text-[10px] text-slate-500 hover:text-white transition-colors flex items-center gap-1 font-black uppercase tracking-tighter italic">
+                                <ion-icon name="share-outline"></ion-icon> Copy Link
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <div class="flex gap-2">
+                    <button class="w-10 h-10 rounded-xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center border border-white/10">
+                        <ion-icon name="search-outline"></ion-icon>
+                    </button>
+                    <button class="w-10 h-10 rounded-xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center border border-white/10">
+                        <ion-icon name="information-circle-outline"></ion-icon>
+                    </button>
                 </div>
             </div>
 
-            <!-- Messages -->
-            <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-4 hide-scrollbar flex flex-col">
-                <div class="flex-1"></div> <!-- Spacer -->
-                <div class="text-center text-slate-500 text-sm py-10">
-                    Select a conversation or start a new one
+            <!-- Messages Area -->
+            <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-6 hide-scrollbar relative">
+                <!-- Watermark Background -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none overflow-hidden">
+                    <span class="text-[20vw] font-black italic tracking-tighter">VOLTCHAT</span>
+                </div>
+                
+                <div class="flex-1 flex flex-col justify-center items-center text-center py-20 opacity-40">
+                    <ion-icon name="terminal-outline" class="text-4xl mb-4 text-indigo-500"></ion-icon>
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-400">Establish Link Connection</p>
+                    <p class="text-[9px] font-bold text-slate-600 mt-1 italic uppercase tracking-tighter">Secure relay pending selection</p>
                 </div>
             </div>
 
             <!-- Input Area -->
-            <div id="input-area" class="p-6 glass border-t border-white/5">
-                <form id="chat-form" class="relative group">
-                    <input 
-                        id="message-input"
-                        type="text" 
-                        placeholder="Type a message..." 
-                        class="w-full bg-[#121212] border border-white/5 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 rounded-2xl py-4 px-6 pr-24 text-sm text-white placeholder-slate-600 transition-all outline-none"
-                    >
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                        <button type="submit" class="p-3 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-500 transition-all active:scale-90">
+            <div class="p-6 pt-2">
+                <form id="chat-form" class="relative group max-w-5xl mx-auto">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                    <div class="relative glass bg-black/60 rounded-2xl flex items-end p-2 pr-4 border border-white/10 focus-within:border-indigo-500/50 transition-all shadow-2xl">
+                        <button type="button" class="p-3 text-slate-500 hover:text-white transition-colors">
+                            <ion-icon name="attach-outline" class="text-xl"></ion-icon>
+                        </button>
+                        <textarea id="message-input" placeholder="Transmit transmission..." rows="1" class="flex-1 bg-transparent border-none outline-none py-3 px-2 text-sm text-white resize-none max-h-32 hide-scrollbar font-medium font-mono italic tracking-wide placeholder-slate-700"></textarea>
+                        <button type="submit" class="mb-1 p-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-500 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center">
                             <ion-icon name="send" class="text-lg"></ion-icon>
                         </button>
                     </div>
@@ -160,61 +279,65 @@
     </div>
 
     <!-- Modals -->
-    <!-- Join Modal -->
-    <div id="join-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
-        <div class="glass p-8 rounded-[32px] max-w-sm w-full relative z-10 space-y-6 animate-fade-in">
-            <div class="space-y-2">
-                <h3 class="text-2xl font-black italic tracking-tight">Join Room</h3>
-                <p class="text-xs text-slate-500 font-medium">Enter a room code to participate.</p>
+    <div id="create-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-md">
+        <div class="w-full max-w-md glass bg-black/60 p-10 rounded-[40px] border border-white/10 space-y-8 animate-fade-in shadow-2xl shadow-indigo-500/10">
+            <div class="space-y-1">
+                <h3 class="text-2xl font-black text-white italic uppercase tracking-tighter">Generate Node</h3>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] italic">Configure session parameters</p>
             </div>
-            <input type="text" id="room-code-input" placeholder="Room Code (e.g. general)" class="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 transition-all text-white">
-            <div class="flex gap-3 pt-2">
-                <button id="btn-close-join" class="flex-1 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl active:scale-95">Cancel</button>
-                <button id="btn-join-room" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl active:scale-95 shadow-lg shadow-indigo-500/20">Join</button>
+            <div class="space-y-6">
+                <div class="space-y-1.5 text-left">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-indigo-400 px-1 italic">Room Designation</label>
+                    <input type="text" id="create-room-name" placeholder="e.g. Protocol_X" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-indigo-500 transition-all text-white font-bold placeholder-slate-700">
+                </div>
+                <div class="space-y-1.5 text-left">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-indigo-400 px-1 italic">Channel Briefing</label>
+                    <textarea id="create-room-desc" placeholder="Operational overview..." rows="2" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-indigo-500 transition-all text-white resize-none font-medium text-sm placeholder-slate-700"></textarea>
+                </div>
+                <div class="flex items-center gap-4 p-5 glass rounded-3xl border border-white/5 bg-white/[0.02]">
+                    <input type="checkbox" id="create-room-public" class="w-6 h-6 rounded-lg bg-white/5 border-white/10 accent-indigo-600 cursor-pointer">
+                    <div class="space-y-0.5">
+                        <label for="create-room-public" class="text-[10px] font-black text-white uppercase italic tracking-widest cursor-pointer">Broadcast Visibility</label>
+                        <p class="text-[9px] text-slate-500 font-bold italic leading-tight">Public broadcast allows external intercept. SecNodes are private.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <button id="btn-close-create" class="flex-1 py-4 bg-white/5 border border-white/10 text-white font-black rounded-2xl hover:bg-white/10 transition-all uppercase italic text-xs tracking-widest">Abort</button>
+                <button id="btn-create-room" class="flex-1 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-500/20 uppercase italic text-xs tracking-widest">Construct</button>
             </div>
         </div>
     </div>
 
-    <!-- Create Modal -->
-    <div id="create-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
-        <div class="glass p-8 rounded-[32px] max-w-sm w-full relative z-10 space-y-6 animate-fade-in">
+    <!-- Error/Setup Required Modal -->
+    <div id="setup-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/95 backdrop-blur-md">
+        <div class="w-full max-w-md glass bg-black/60 p-10 rounded-[40px] border border-red-500/20 space-y-8 text-center">
+             <div class="mx-auto w-16 h-16 bg-red-600/20 text-red-500 rounded-2xl flex items-center justify-center border border-red-500/40">
+                <ion-icon name="alert-circle" class="text-3xl"></ion-icon>
+            </div>
             <div class="space-y-2">
-                <h3 class="text-2xl font-black italic tracking-tight">Create Room</h3>
-                <p class="text-xs text-slate-500 font-medium">Start a new conversation context.</p>
+                <h3 class="text-2xl font-black text-white uppercase italic tracking-tighter">System Alert</h3>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed px-2">
+                    Anonymous Transmission is currently <span class="text-red-500 font-black italic">DISABLED</span>. Deployment requires administrative activation via console.
+                </p>
             </div>
             <div class="space-y-4">
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 px-1">Room Name</label>
-                    <input type="text" id="create-room-name" placeholder="Team Sync, Study Group..." class="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 transition-all text-white">
-                </div>
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 px-1">Description (Optional)</label>
-                    <textarea id="create-room-desc" placeholder="What's this room about?" rows="3" class="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 transition-all text-white resize-none"></textarea>
-                </div>
+                <a id="setup-link" href="#" target="_blank" class="block w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/20 uppercase italic text-xs tracking-widest">
+                    Open Control Console
+                </a>
+                <p class="text-[9px] text-slate-600 font-black uppercase tracking-widest italic">
+                    Go to: Build > Auth > Sign-in method > Enable Anonymous
+                </p>
             </div>
-            <div class="flex gap-3 pt-2">
-                <button id="btn-close-create" class="flex-1 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl active:scale-95">Cancel</button>
-                <button id="btn-create-room" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl active:scale-95 shadow-lg shadow-indigo-500/20">Create</button>
-            </div>
+             <button onclick="document.getElementById('setup-modal').classList.add('hidden')" class="text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors italic">
+                Retry Connection
+            </button>
         </div>
     </div>
 
-    <!-- Firebase SDK Scripts -->
-    <script type="module" src="script.js"></script>
-    <script>
-        // Safety timeout to hide loading screen if scripts fail
-        setTimeout(() => {
-            const ls = document.getElementById('loading-screen');
-            if (ls && !ls.classList.contains('hidden')) {
-                ls.style.opacity = '0';
-                ls.style.pointerEvents = 'none';
-                setTimeout(() => ls.classList.add('hidden'), 500);
-                document.body.style.overflow = 'auto';
-                console.warn("Loading safety timeout triggered.");
-            }
-        }, 4000); // 4 seconds
-    </script>
+    <!-- Scripts -->
+    <script type="module" src="/script.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>
 </html>
