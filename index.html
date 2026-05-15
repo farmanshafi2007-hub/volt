@@ -50,30 +50,27 @@
     <!-- Auth Screen -->
     <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden">
         <div class="absolute inset-0 bg-[#020202] z-0"></div>
-        <!-- Background Atmosphere -->
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/10 blur-[120px] rounded-full"></div>
         
         <div class="glass p-10 rounded-[40px] max-w-sm w-full text-center space-y-8 relative z-10 border border-white/10 shadow-2xl">
-            <div class="mx-auto w-24 h-24 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-[32px] flex items-center justify-center shadow-indigo-500/40 shadow-2xl relative">
-                <ion-icon name="chatbubble-ellipses" class="text-white text-5xl"></ion-icon>
+            <div class="mx-auto w-20 h-20 bg-indigo-600 rounded-[28px] flex items-center justify-center shadow-indigo-500/40 shadow-2xl">
+                <ion-icon name="chatbubble-ellipses" class="text-white text-4xl"></ion-icon>
             </div>
             
-            <div class="space-y-3">
-                <h1 class="text-5xl font-black italic tracking-tighter text-white">VOLT</h1>
-                <div class="h-1 w-12 bg-indigo-500 mx-auto rounded-full"></div>
-                <p class="text-slate-400 text-sm leading-relaxed font-medium">
-                    Secure, lightning-fast communication.<br/>
-                    <span class="text-white/60 text-xs">Connect instantly with chat rooms.</span>
-                </p>
+            <div class="space-y-2">
+                <h1 class="text-4xl font-black italic tracking-tighter text-white">VOLT</h1>
+                <p class="text-slate-400 text-xs font-medium uppercase tracking-widest">Enter the Chat</p>
             </div>
 
-            <button id="login-button" class="w-full bg-white text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-100 active:scale-95 transition-all shadow-xl">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" class="w-5 h-5">
-                Sign in with Google
-            </button>
+            <div class="space-y-4">
+                <input type="text" id="user-name-input" placeholder="Your Display Name" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-indigo-500 transition-all text-white text-center font-bold">
+                <button id="login-button" class="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-slate-100 active:scale-95 transition-all shadow-xl">
+                    JOIN THE VOLT
+                </button>
+            </div>
 
             <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                End-to-end encrypted • Pulse v1.2
+                No sign-up required • Pulse v1.2
             </p>
         </div>
     </div>

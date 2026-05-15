@@ -2,7 +2,7 @@
 // Using Firebase CDN Modules
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInAnonymously, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, where, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- GLOBAL ERROR LOGGING ---
@@ -33,7 +33,6 @@ try {
     const app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app, "ai-studio-c7f24d3c-f8c2-4954-a163-6bc91b462494");
-    provider = new GoogleAuthProvider();
 } catch (err) {
     console.error("Firebase init error:", err);
     if (loadingScreen) {
@@ -50,6 +49,7 @@ const toastContainer = document.getElementById('toast-container');
 const authScreen = document.getElementById('auth-screen');
 const appScreen = document.getElementById('app-screen');
 const loginBtn = document.getElementById('login-button');
+const userNameInput = document.getElementById('user-name-input');
 const logoutBtn = document.getElementById('logout-button');
 const userAvatar = document.getElementById('user-avatar');
 const messagesContainer = document.getElementById('messages-container');
@@ -122,30 +122,27 @@ let unsubscribeMessages = null;
 
 // --- AUTH LOGIC ---
 if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
-        console.log("Attempting Google Login...");
+    loginBtn.addEventListener('click', async () => {
+        const displayName = userNameInput.value.trim();
+        if(!displayName) return showToast("Please enter a name");
+
+        console.log("Attempting Anonymous Login...");
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<div class="spinner w-5 h-5 border-2 border-slate-400 border-t-black"></div>';
         
-        signInWithPopup(auth, provider)
-            .then((result) => {
-                console.log("Login success:", result.user.email);
-                showToast("Welcome, " + result.user.displayName, "success");
-            })
-            .catch(err => {
-                console.error("Login error:", err);
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" class="w-5 h-5"> Sign in with Google';
-                
-                if (err.code === 'auth/popup-blocked') {
-                    showToast("Please allow popups for this site.");
-                } else if (err.code === 'auth/unauthorized-domain') {
-                    showToast("Domain missing from Firebase. Open console and add: " + window.location.hostname);
-                    console.error("FIREBASE ERROR: 'auth/unauthorized-domain'. \n1. Go to Firebase Console > Authentication > Settings > Authorized Domains. \n2. Add this domain: " + window.location.hostname);
-                } else {
-                    showToast(err.code + ": " + err.message);
-                }
+        try {
+            const result = await signInAnonymously(auth);
+            await updateProfile(result.user, {
+                displayName: displayName,
+                photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${result.user.uid}`
             });
+            showToast("Welcome, " + displayName, "success");
+        } catch (err) {
+            console.error("Login error:", err);
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = 'JOIN THE VOLT';
+            showToast(err.code + ": " + err.message);
+        }
     });
 }
 
@@ -212,7 +209,7 @@ onAuthStateChanged(auth, async (user) => {
         
         // Reset button state
         loginBtn.disabled = false;
-        loginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" class="w-5 h-5"> Sign in with Google';
+        loginBtn.innerHTML = 'JOIN THE VOLT';
     }
 });
 
