@@ -11,87 +11,70 @@ service cloud.firestore {
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
-
-    // --- Connection Test ---
-    match /test/connection {
-      allow get: if true;
-    }
 
     // --- User Profiles ---
     match /users/{userId} {
       allow get: if isSignedIn();
-      allow list: if isSignedIn() && (resource.data.roomCode == request.query.filters.roomCode || request.query.limit <= 20); 
-      
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isOwner(userId) && (
-        (incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'status', 'lastSeen', 'roomCode']) && isValidUser(incoming()))
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'lastSeen']) && isValidUser(incoming())
       );
 
       function isValidUser(data) {
         return data.uid == request.auth.uid 
-          && data.email == request.auth.token.email
           && data.displayName is string && data.displayName.size() <= 100
           && (data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 1000))
-          && (!data.keys().hasAll(['roomCode']) || (data.roomCode is string && data.roomCode.size() >= 4 && data.roomCode.size() <= 12))
-          && data.status in ['online', 'offline']
           && (data.lastSeen == request.time || data.lastSeen is timestamp);
       }
     }
 
     // --- Conversations ---
     match /conversations/{conversationId} {
-      allow get: if isSignedIn() && existing().participants.hasAny([request.auth.uid]);
-      allow list: if isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
+      function isGeneral() { return conversationId == 'general'; }
+      
+      // For the conversation document itself
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && (isGeneral() || resource.data.participants.hasAny([request.auth.uid]));
       
       allow create: if isSignedIn() && isValidConversation(incoming()) && incoming().participants.hasAny([request.auth.uid]);
-      allow update: if isSignedIn() && existing().participants.hasAny([request.auth.uid]) && (
-        (incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'updatedAt']) && isValidConversationUpdate(incoming()))
+      allow update: if isSignedIn() && (
+        isGeneral() || existing().participants.hasAny([request.auth.uid])
+      ) && (
+        (incoming().diff(existing()).affectedKeys().hasOnly(['participants', 'lastMessage', 'updatedAt']) && isValidConversationUpdate(incoming()))
       );
 
       function isValidConversation(data) {
-        return data.participants is list && data.participants.size() >= 1 && data.participants.size() <= 10
-          && (data.createdAt == request.time || data.createdAt is timestamp)
-          && (data.updatedAt == request.time || data.updatedAt is timestamp)
-          && data.participantDetails is map;
+        return data.participants is list && data.participants.size() >= 1 && data.participants.size() <= 100
+          && (data.createdAt == request.time || data.createdAt is timestamp);
       }
 
       function isValidConversationUpdate(data) {
-        return (data.updatedAt == request.time || data.updatedAt is timestamp);
-      }
-
-      // --- Typing Indicators ---
-      match /typing/{userId} {
-        allow read: if isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
-        allow write: if isOwner(userId) 
-          && incoming().participants == get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
-          && incoming().participants.hasAny([request.auth.uid])
-          && isValidTyping(incoming());
-
-        function isValidTyping(data) {
-          return data.isTyping is bool && (data.updatedAt == request.time || data.updatedAt is timestamp);
-        }
+        return (incoming().updatedAt == request.time || incoming().updatedAt is timestamp)
+          && (!incoming().keys().hasAll(['participants']) || (incoming().participants is list && incoming().participants.size() <= 100));
       }
 
       // --- Messages Subcollection ---
       match /messages/{messageId} {
-        allow get: if isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
-        allow list: if isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
+        function canAccessMessages() {
+          return isGeneral() || (
+            isSignedIn() && 
+            get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid])
+          );
+        }
+
+        allow read: if isSignedIn() && canAccessMessages();
         
-        allow create: if isSignedIn() 
-          && incoming().participants == get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
-          && incoming().participants.hasAny([request.auth.uid])
+        allow create: if isSignedIn() && canAccessMessages() 
+          && incoming().userId == request.auth.uid
           && isValidMessage(incoming());
         
-        allow delete: if isSignedIn() && existing().senderId == request.auth.uid; // Allow delete own messages
-        allow update: if false; // Messages are immutable
+        allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+        allow update: if false;
 
         function isValidMessage(data) {
-          return data.senderId == request.auth.uid
+          return data.userId == request.auth.uid
             && data.text is string && data.text.size() <= 2000
-            && (data.timestamp == request.time || data.timestamp is timestamp)
-            && data.type in ['text', 'image']
-            && data.participants is list;
+            && (data.createdAt == request.time || data.createdAt is timestamp);
         }
       }
     }
