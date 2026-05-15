@@ -392,72 +392,107 @@ export default function App() {
 
   if (loading) return <div className="h-screen w-full flex items-center justify-center bg-black"><motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity }} className="h-12 w-12 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" /></div>;
 
-  if (!user) return (
-    <div className="h-screen w-full flex flex-col items-center justify-center bg-black p-4 relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
-      
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass p-8 rounded-3xl max-w-sm w-full text-center space-y-6 relative z-10"
-      >
-        <div className="mx-auto w-20 h-20 bg-indigo-600 rounded-[28px] flex items-center justify-center shadow-indigo-500/40 shadow-2xl relative">
-          <motion.div 
-            animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 4 }}
-          >
-            <MessageSquare className="text-white w-10 h-10" />
-          </motion.div>
-          <motion.div 
-            animate={{ opacity: [0, 1, 0], y: [-20, -40, -60], x: [20, 40, 20] }}
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="absolute -top-2 -right-2 bg-emerald-500 p-1.5 rounded-lg shadow-lg"
-          >
-             <Sparkles className="w-4 h-4 text-white" />
-          </motion.div>
+  if (!user) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#020202] p-4 relative overflow-hidden font-sans">
+        {/* Background Atmosphere */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {[...Array(30)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ 
+                opacity: 0.1, 
+                x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000), 
+                y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1000) 
+              }}
+              animate={{ opacity: [0.1, 0.3, 0.1], scale: [1, 1.5, 1] }}
+              transition={{ duration: 5 + Math.random() * 5, repeat: Infinity }}
+              className="absolute w-1 h-1 bg-indigo-500 rounded-full blur-[1px]"
+            />
+          ))}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/5 blur-[120px] rounded-full" />
         </div>
-        <div className="space-y-3">
-          <h1 className="text-4xl font-black tracking-tighter text-white">VOLT</h1>
-          <p className="text-slate-400 text-sm leading-relaxed px-4">Secure, lightning-fast communication powered by Pulse engine. Connect instantly with room codes.</p>
-        </div>
-        <button 
-          onClick={signInWithGoogle}
-          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white text-black font-semibold rounded-2xl hover:bg-slate-100 transition-all active:scale-95"
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass p-10 rounded-[40px] max-w-sm w-full text-center space-y-8 relative z-10 border border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]"
         >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" className="w-5 h-5" />
-          Continue with Google
-        </button>
-        <p className="text-xs text-slate-500">By continuing, you agree to our Terms of Service.</p>
-      </motion.div>
-    </div>
-  );
+          <div className="mx-auto w-24 h-24 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-[32px] flex items-center justify-center shadow-indigo-500/20 shadow-2xl relative group">
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 6 }}
+            >
+              <MessageSquare className="text-white w-12 h-12" />
+            </motion.div>
+            <div className="absolute inset-0 bg-white/20 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity" />
+            <motion.div 
+              animate={{ opacity: [0, 1, 0], scale: [0.8, 1.2, 0.8] }}
+              transition={{ repeat: Infinity, duration: 3 }}
+              className="absolute -top-3 -right-3 bg-emerald-500 p-2 rounded-xl shadow-lg border-2 border-black"
+            >
+               <Sparkles className="w-4 h-4 text-white" />
+            </motion.div>
+          </div>
+          
+          <div className="space-y-3">
+            <h1 className="text-5xl font-black italic tracking-tighter text-white">VOLT</h1>
+            <div className="h-1 w-12 bg-indigo-500 mx-auto rounded-full" />
+            <p className="text-slate-400 text-sm leading-relaxed font-medium">
+              Secure, lightning-fast communication.<br/>
+              <span className="text-white/60">Connect instantly with Pulse room codes.</span>
+            </p>
+          </div>
+
+          <button 
+            onClick={signInWithGoogle}
+            className="w-full bg-white text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-100 active:scale-[0.98] transition-all shadow-[0_20px_40px_-10px_rgba(255,255,255,0.2)]"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa/google.svg" alt="Google" className="w-5 h-5" />
+            Sign in with Google
+          </button>
+
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+            End-to-end encrypted • Pulse v1.2
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full flex bg-black overflow-hidden relative font-sans selection:bg-indigo-500/30">
       {/* Animated Starfield Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[#020202]" />
-        {[...Array(50)].map((_, i) => (
+        {[...Array(80)].map((_, i) => (
           <motion.div
             key={i}
             initial={{ 
               opacity: Math.random(), 
-              x: Math.random() * window.innerWidth, 
-              y: Math.random() * window.innerHeight 
+              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920), 
+              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080)
             }}
             animate={{ 
-              opacity: [0.2, 0.8, 0.2],
-              scale: [1, 1.5, 1],
+              opacity: [0.1, 0.4, 0.1],
+              scale: [1, 1.2, 1],
+              y: ["0%", "5%"]
             }}
             transition={{ 
-              duration: 2 + Math.random() * 4, 
+              duration: 3 + Math.random() * 5, 
               repeat: Infinity,
-              delay: Math.random() * 5
+              delay: Math.random() * 5,
+              ease: "easeInOut"
             }}
-            className="absolute w-0.5 h-0.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+            className={cn(
+              "absolute rounded-full",
+              i % 10 === 0 ? "w-1 h-1 bg-indigo-500/40 blur-[1px]" : "w-0.5 h-0.5 bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+            )}
           />
         ))}
+        {/* Glow Effects */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-900/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-900/10 blur-[120px] rounded-full" />
       </div>
       {/* Mobile Header Overlay if convo selected */}
       <AnimatePresence>
